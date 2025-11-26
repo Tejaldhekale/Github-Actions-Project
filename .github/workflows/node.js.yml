@@ -7,41 +7,42 @@ on:
     branches: [ "main" ]
 
 jobs:
+
   compile:
     runs-on: Agent-1
 
     steps:
-     - name: Checkout Code
-       uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
        
-     - name: Set up Node.js
-       uses: actions/setup-node@v4
-       with:
-        node-version: '23'  #adjust version as per jenkins version
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23'
 
-     - name: Frontend Compilation (Syntax Check)
-       run: |
-         cd client
-         find . -name "*.js" -exec node --check {} +
+      - name: Frontend Compilation (Syntax Check)
+        run: |
+          cd client
+          find . -name "*.js" -exec node --check {} +
 
-     - name: Backend Compilation (Syntax Check)
-       run: |
-         cd api
-         find . -name "*.js" -exec node --check {} +
+      - name: Backend Compilation (Syntax Check)
+        run: |
+          cd api
+          find . -name "*.js" -exec node --check {} +
 
   gitleaks-scan:
     runs-on: Agent-1
     needs: compile
 
     steps:
-     - name: Checkout Code
-       uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
        
-     - name: Gitleaks Setup
-       uses: gitleaks/gitleaks-action@v2
+      - name: Gitleaks Setup
+        uses: gitleaks/gitleaks-action@v2
 
-     - name: Gitleaks Scan
-       run: | 
+      - name: Gitleaks Scan
+        run: |
           gitleaks detect --source ./client --exit-code 1
           gitleaks detect --source ./api --exit-code 1
 
@@ -50,11 +51,12 @@ jobs:
     needs: gitleaks-scan
 
     steps:
-     - name: Checkout Code
-       uses: actions/checkout@v4
-     - name: Run Trivy vulnerability scanner
-       uses: aquasecurity/trivy-action@0.28.0
-       with:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
           scan-type: 'fs'
           scan-ref: '.'
           format: 'table'
@@ -64,46 +66,46 @@ jobs:
 
   sonar-frontend:
     runs-on: Agent-1
-    needs: trivy_fs_scan
+    needs: trivy-fs-scan
     
     steps:
-﻿﻿     - name: Checkout code
-       uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
            
-     - ﻿﻿name: SonarQube Scan (client)
-       uses: sonarsource/sonarqube-scan-action@master 
-       with:
-         projectBaseDir: client   # $ instead of working-directory
-         args: >
-           -Dsonar.projectKey=myorg_client
-﻿           -Dsonar projectName-myorg_client
-﻿﻿           -Dsonar. sources=•
-           -﻿Dsonar.exclusions=**/node_modules/**, **/dist/**,**/build/**
-       env :
-        SONAR TOKEN: $t secrets.SONAR_TOKEN }}
-        SONAR_HOST URL: $ff secrets. SONAR_HOST_URL |}
+      - name: SonarQube Scan (frontend)
+        uses: sonarsource/sonarqube-scan-action@master 
+        with:
+          projectBaseDir: client
+          args: >
+            -Dsonar.projectKey=myorg_client
+            -Dsonar.projectName=myorg_client
+            -Dsonar.sources=.
+            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
-        
   sonar-backend:
     runs-on: Agent-1
     needs: sonar-frontend
     
     steps:
-﻿﻿     - name: Checkout code
-       uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
            
-     - ﻿﻿name: SonarQube Scan (client)
-       uses: sonarsource/sonarqube-scan-action@master 
-       with:
-         projectBaseDir: api   # $ instead of working-directory
-         args: >
-           -Dsonar.projectKey=myorg_client
-﻿           -Dsonar projectName-myorg_client
-﻿﻿           -Dsonar. sources=•
-           -﻿Dsonar.exclusions=**/node_modules/**, **/dist/**,**/build/**
-       env :
-        SONAR TOKEN: $t secrets.SONAR_TOKEN }}
-        SONAR_HOST URL: $ff secrets. SONAR_HOST_URL |}
+      - name: SonarQube Scan (backend)
+        uses: sonarsource/sonarqube-scan-action@master 
+        with:
+          projectBaseDir: api
+          args: >
+            -Dsonar.projectKey=myorg_api
+            -Dsonar.projectName=myorg_api
+            -Dsonar.sources=.
+            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
 
         
       
